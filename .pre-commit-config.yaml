@@ -1,6 +1,6 @@
 # Install: pip install pre-commit && pre-commit install
 # Run all hooks: pre-commit run --all-files
-# Docker is required for: gitleaks, kubeconform 
+# Docker is required for: gitleaks, kubeconform
 
 default_install_hook_types: [pre-commit]
 

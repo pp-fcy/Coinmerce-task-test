@@ -43,7 +43,7 @@ spec:
               containerPort: 8000
               protocol: TCP
 
-          # Resource limits 
+          # Resource limits
           resources:
             requests:
               cpu: "50m"
@@ -59,7 +59,7 @@ spec:
               drop:
                 - ALL
 
-          # Liveness 
+          # Liveness
           livenessProbe:
             httpGet:
               path: /
