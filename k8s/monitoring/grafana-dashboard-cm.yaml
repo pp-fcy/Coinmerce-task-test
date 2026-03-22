@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: coinmerce-webapp-dashboard
-  namespace: monitoring
+  namespace: coinmerce
   annotations:
     argocd.argoproj.io/sync-wave: "3"
   labels:
