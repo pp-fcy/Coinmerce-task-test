@@ -1,0 +1,68 @@
+---
+# Istio Gateway — entrypoint for external traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: coinmerce-gateway
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+# VirtualService — routing rules
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - coinmerce-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: coinmerce-app
+            port:
+              number: 80
+      timeout: 10s
+      retries:
+        attempts: 3
+        perTryTimeout: 3s
+        retryOn: gateway-error,connect-failure,retriable-4xx
+---
+# DestinationRule — circuit breaker + connection pool
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  host: coinmerce-app
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 100
+        http2MaxRequests: 1000
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

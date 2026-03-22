@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: coinmerce-app
+spec:
+  type: ClusterIP
+  selector:
+    app: coinmerce-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

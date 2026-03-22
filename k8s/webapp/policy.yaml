@@ -1,0 +1,84 @@
+---
+# Horizontal Pod Autoscaler — scale on CPU
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: coinmerce-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+---
+# PodDisruptionBudget — always keep at least 1 pod running
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: coinmerce-app
+---
+# NetworkPolicy — default deny, allow only what's needed
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  podSelector:
+    matchLabels:
+      app: coinmerce-app
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from anywhere on port 8000
+    - ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow DNS
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

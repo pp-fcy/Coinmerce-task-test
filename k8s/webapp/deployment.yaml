@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coinmerce-app
+  namespace: coinmerce
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: coinmerce-app
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: coinmerce-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: coinmerce-app
+        version: v1
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: coinmerce-app
+
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: coinmerce-app
+          image: crccheck/hello-world:v1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          # Resource limits 
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+
+          # Container-level security
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          # Liveness 
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 3
+
+          # Readiness
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 2
+            timeoutSeconds: 3
+
+          # Drain connections before pod terminates
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]

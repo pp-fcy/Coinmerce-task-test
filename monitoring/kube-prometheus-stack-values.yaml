@@ -1,0 +1,51 @@
+grafana:
+  enabled: true
+  adminPassword: admin #this is not a good practice, it should be stored in a secret or vault
+  defaultDashboardsEnabled: false
+  podAnnotations:
+    argocd.argoproj.io/sync-wave: "2"
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          folder: Webapp
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+prometheus:
+  prometheusSpec:
+    podMetadata:
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"
+    # Scrape all ServiceMonitors across all namespaces
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    retention: 24h
+    resources:
+      requests:
+        memory: 400Mi
+        cpu: 100m
+      limits:
+        memory: 800Mi
+        cpu: 500m
+
+alertmanager:
+  enabled: false
+kubeStateMetrics:
+  enabled: true
+  podAnnotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+nodeExporter:
+  enabled: true
+  podAnnotations:
+    argocd.argoproj.io/sync-wave: "2"
+
+prometheusOperator:
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  podAnnotations:
+    argocd.argoproj.io/sync-wave: "2"

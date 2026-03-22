@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coinmerce-webapp-dashboard
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    grafana_dashboard: "1"
+data:
+  coinmerce-webapp.json: |
+    {
+      "title": "Coinmerce Webapp",
+      "uid": "coinmerce-webapp",
+      "schemaVersion": 38,
+      "version": 1,
+      "tags": ["coinmerce", "webapp"],
+      "refresh": "30s",
+      "time": { "from": "now-1h", "to": "now" },
+      "timezone": "browser",
+      "editable": true,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "id": 1,
+          "title": "Deployment replicas (desired / ready)",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
+          "targets": [
+            { "expr": "kube_deployment_spec_replicas{namespace=\"coinmerce\", deployment=\"coinmerce-app\"}", "legendFormat": "desired" },
+            { "expr": "kube_deployment_status_replicas_available{namespace=\"coinmerce\", deployment=\"coinmerce-app\"}", "legendFormat": "ready" }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Running pods",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+          "targets": [{ "expr": "sum(kube_pod_status_phase{namespace=\"coinmerce\", pod=~\"coinmerce-app.*\", phase=\"Running\"})", "legendFormat": "pods" }]
+        },
+        {
+          "id": 3,
+          "title": "CPU (cores) by pod",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1 } } },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"coinmerce\", container=\"coinmerce-app\", pod=~\"coinmerce-app.*\"}[5m])) by (pod)",
+              "legendFormat": "{{ pod }}"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "title": "Memory (bytes) by pod",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+          "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1 } } },
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"coinmerce\", container=\"coinmerce-app\", pod=~\"coinmerce-app.*\"}) by (pod)",
+              "legendFormat": "{{ pod }}"
+            }
+          ]
+        }
+      ]
+    }

@@ -1,0 +1,34 @@
+# Runs the same hooks as locally: .pre-commit-config.yaml (via pre-commit/action).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Official action: installs hooks, caches environments, runs pre-commit
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure
+  scan: # image build can also be done in this CICD job
+    runs-on: ubuntu-latest
+    needs: pre-commit
+    steps:
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: crccheck/hello-world:v1.0.0
+          format: table
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true

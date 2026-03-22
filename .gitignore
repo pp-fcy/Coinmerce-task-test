@@ -1,0 +1,19 @@
+# Docker
+*.tar
+
+# Istio (istioctl download / local SDK — never commit)
+istio-*/
+# Optional local Kustomize experiment + helm pull cache
+istio/istio-base-kustomize/
+
+# OS
+.DS_Store
+*.swp
+
+# Tools
+kubeval
+gitleaks
+actionlint
+
+# Local Argo CD secrets (never commit PATs)
+argocd/repo-credentials.secret.yaml
