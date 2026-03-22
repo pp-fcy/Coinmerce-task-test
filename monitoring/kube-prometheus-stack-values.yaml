@@ -1,8 +1,9 @@
 crds:
-  annotations:
-    # kube-prometheus-stack CRDs exceed the 256 KB annotation limit when using
-    argocd.argoproj.io/sync-options: Replace=true
-    argocd.argoproj.io/sync-options: ServerSideApply=true
+  # Disable CRD management inside the Helm release.
+  # These CRDs exceed Kubernetes' 256 KB annotation limit when applied via
+  # kubectl apply (client-side), so they are installed separately using
+  # `kubectl apply --server-side` which avoids last-applied-configuration.
+  enabled: false
 
 grafana:
   enabled: true
