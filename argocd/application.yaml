@@ -47,6 +47,8 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      # Skip dry-run validation for resources whose CRD is not yet installed.
+      - SkipDryRunOnMissingResource=true
     retry:
       limit: 3
       backoff:

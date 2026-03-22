@@ -1,3 +1,11 @@
+crds:
+  annotations:
+    # kube-prometheus-stack CRDs exceed the 256 KB annotation limit when using
+    # kubectl apply / server-side apply (metadata.annotations: Too long).
+    # Replace=true makes ArgoCD use `kubectl replace` for these CRDs, which
+    # does a clean swap and avoids annotation accumulation entirely.
+    argocd.argoproj.io/sync-options: Replace=true
+
 grafana:
   enabled: true
   adminPassword: admin #this is not a good practice, it should be stored in a secret or vault
