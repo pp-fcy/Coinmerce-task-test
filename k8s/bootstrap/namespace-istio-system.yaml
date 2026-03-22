@@ -1,0 +1,7 @@
+# Applied before the istio/base Helm source so the chart can install into istio-system.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
