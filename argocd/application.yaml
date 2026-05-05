@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-coinmerce
+  name: test-fincore
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   sources:
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
+    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
       targetRevision: main
       ref: values
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
+    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
       path: k8s/bootstrap
       targetRevision: main
     # Installs networking.istio.io CRDs before istio/manifests.yaml
@@ -22,10 +22,10 @@ spec:
         releaseName: istio-base
         values: |
           defaultRevision: default
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
+    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
       path: k8s/webapp
       targetRevision: main
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
+    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
       path: istio
       targetRevision: main
     - repoURL: https://prometheus-community.github.io/helm-charts
@@ -34,12 +34,12 @@ spec:
       helm:
         valueFiles:
           - $values/monitoring/kube-prometheus-stack-values.yaml
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
+    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
       path: k8s/monitoring
       targetRevision: main
   destination:
     server: https://kubernetes.default.svc
-    namespace: coinmerce
+    namespace: fincore
   syncPolicy:
     automated:
       prune: true

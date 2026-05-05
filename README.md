@@ -1,4 +1,4 @@
-# Coinmerce DevOps Challenge
+# Fincore DevOps Challenge
 
 A production-grade local Kubernetes deployment of a webapp using `crccheck/hello-world` demonstrating
 real-world DevOps practices: kind cluster, security hardening,
@@ -18,7 +18,7 @@ Local checks (pre-commit + optional CLI)
   ├── Gitleaks    — scan repo for leaked secrets
 
 Kubernetes (kind — 1 control-plane + 2 workers)
-  ├── Namespace: coinmerce (Istio injection enabled)
+  ├── Namespace: fincore (Istio injection enabled)
   ├── Deployment: crccheck/hello-world:v1.0.0 (2 replicas, port 8000)
   ├── HPA (min 2, max 10 replicas, CPU 60%)
   ├── PodDisruptionBudget (minAvailable: 1)
@@ -33,7 +33,7 @@ Service Mesh (Istio)
   └── DestinationRule (circuit breaker — eject after 3x 5xx)
 
 GitOps (ArgoCD)
-  └── One Application `coinmerce` — multi-source, sync waves: web/networking.istio.io-CRDs (0) → istio (1) → stack (2) → extras (3)
+  └── One Application `test-fincore` — multi-source, sync waves: web/networking.istio.io-CRDs (0) → istio (1) → stack (2) → extras (3)
 ```
 
 **Layout:** `k8s/webapp/` is the Hello World workload. `k8s/monitoring/` holds the Grafana dashboard ConfigMap. `istio/` holds optional mesh CRDs. `argocd/application.yaml` is the single **Application** (multi-source: webapp, istio, Helm chart, monitoring extras).
@@ -69,8 +69,8 @@ kubectl apply -f k8s/webapp/namespace.yaml
 kubectl apply -f k8s/webapp/deployment.yaml
 kubectl apply -f k8s/webapp/service.yaml
 kubectl apply -f k8s/webapp/policy.yaml
-kubectl rollout status deployment/coinmerce-app -n coinmerce --timeout=120s
-kubectl port-forward svc/coinmerce-app 8080:80 -n coinmerce &
+kubectl rollout status deployment/fincore-app -n fincore --timeout=120s
+kubectl port-forward svc/fincore-app 8080:80 -n fincore &
 curl -sf http://localhost:8080/ | grep -q "Hello World" && echo OK || echo FAIL
 ```
 
@@ -106,7 +106,7 @@ kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring    
 kubectl port-forward svc/kube-prometheus-stack-prometheus 9090:9090 -n monitoring
 ```
 
-Grafana loads one dashboard (**Coinmerce Webapp**): deployment replicas, running pods, CPU and memory per pod (from **kube-state-metrics** and **cAdvisor**).
+Grafana loads one dashboard (**Fincore Webapp**): deployment replicas, running pods, CPU and memory per pod (from **kube-state-metrics** and **cAdvisor**).
 
 ---
 
@@ -114,8 +114,8 @@ Grafana loads one dashboard (**Coinmerce Webapp**): deployment replicas, running
 
 ```bash
 istioctl install --set profile=minimal -y
-kubectl label namespace coinmerce istio-injection=enabled --overwrite
-kubectl rollout restart deployment/coinmerce-app -n coinmerce
+kubectl label namespace fincore istio-injection=enabled --overwrite
+kubectl rollout restart deployment/fincore-app -n fincore
 kubectl apply -f istio/manifests.yaml
 ```
 
@@ -125,7 +125,7 @@ Adds: retry logic (3 attempts on 5xx), 10s timeout, circuit breaker (ejects pod 
 
 ## GitOps (ArgoCD)
 
-**Single Application `coinmerce`** (`argocd/application.yaml`) uses **multi-source** and **resource sync waves** (no nested Application CRs):
+**Single Application `test-fincore`** (`argocd/application.yaml`) uses **multi-source** and **resource sync waves** (no nested Application CRs):
 
 | Sync wave | Source | What deploys |
 |-----------|--------|----------------|
@@ -137,7 +137,7 @@ Adds: retry logic (3 attempts on 5xx), 10s timeout, circuit breaker (ejects pod 
 
 Add the repo in `ArgoCD` GUI.
 
-Then install the control plane and apply the `coinmerce` Application:
+Then install the control plane and apply the `test-coinmerce` Application:
 
 ```bash
 ./scripts/install-argocd.sh   # also runs: kubectl apply -f argocd/application.yaml

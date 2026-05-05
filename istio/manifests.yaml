@@ -3,8 +3,8 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: coinmerce-gateway
-  namespace: coinmerce
+  name: fincore-gateway
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
@@ -22,22 +22,22 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   hosts:
     - "*"
   gateways:
-    - coinmerce-gateway
+    - fincore-gateway
   http:
     - match:
         - uri:
             prefix: /
       route:
         - destination:
-            host: coinmerce-app
+            host: fincore-app
             port:
               number: 80
       timeout: 10s
@@ -50,12 +50,12 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  host: coinmerce-app
+  host: fincore-app
   trafficPolicy:
     connectionPool:
       http:

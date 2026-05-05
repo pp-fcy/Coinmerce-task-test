@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/install-argocd.sh — Install Argo CD on local kind cluster and apply the coinmerce Application.
+# scripts/install-argocd.sh — Install Argo CD on local kind cluster and apply the test-fincore Application.
 set -euo pipefail
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
@@ -29,7 +29,7 @@ PASS=$(kubectl get secret argocd-initial-admin-secret \
   -n argocd \
   -o jsonpath="{.data.password}" | base64 -d)
 
-log "Applying Application coinmerce (multi-source, sync waves)..."
+log "Applying Application test-fincore (multi-source, sync waves)..."
 kubectl apply -f "$ROOT/argocd/application.yaml"
 
 

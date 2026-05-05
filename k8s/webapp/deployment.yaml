@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   labels:
-    app: coinmerce-app
+    app: fincore-app
     version: v1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: coinmerce-app
+      app: fincore-app
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: coinmerce-app
+        app: fincore-app
         version: v1
     spec:
       topologySpreadConstraints:
@@ -30,17 +30,19 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: coinmerce-app
+              app: fincore-app
 
       terminationGracePeriodSeconds: 30
 
       containers:
-        - name: coinmerce-app
-          image: crccheck/hello-world:v1.0.0
-          imagePullPolicy: IfNotPresent
+        - name: fincore-app
+          # Image is updated automatically by the CI golden path (ci.yaml job: deploy).
+          # Tag is pinned to sha-<commit> on every push to main; ArgoCD then auto-syncs.
+          image: ppfcy13/fincore-hello:latest
+          imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: 8080
               protocol: TCP
 
           # Resource limits
@@ -59,20 +61,20 @@ spec:
               drop:
                 - ALL
 
-          # Liveness
+          # Liveness — server.py returns 200 on /healthz
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
             timeoutSeconds: 3
 
-          # Readiness
+          # Readiness — same endpoint; pod only receives traffic when healthy
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 3
             periodSeconds: 5

@@ -3,15 +3,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: coinmerce-app
+    name: fincore-app
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -45,36 +45,36 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: coinmerce-app
+      app: fincore-app
 ---
 # NetworkPolicy — default deny, allow only what's needed
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: coinmerce-app
-  namespace: coinmerce
+  name: fincore-app
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   podSelector:
     matchLabels:
-      app: coinmerce-app
+      app: fincore-app
   policyTypes:
     - Ingress
     - Egress
   ingress:
-    # Allow traffic from anywhere on port 8000
+    # Allow traffic from anywhere to the webapp container port.
     - ports:
         - protocol: TCP
-          port: 8000
+          port: 8080
   egress:
     # Allow DNS
     - ports:
@@ -82,3 +82,19 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    # Allow egress only to explicitly selected destination pods.
+    #
+    # To allow the webapp to talk to a given Service, label that Service's pods with:
+    #   fincore.io/allow-from-webapp: "true"
+    #
+    # Example (Service "payments" backed by Deployment "payments"):
+    #   kubectl -n fincore label deployment payments fincore.io/allow-from-webapp="true"
+    #
+    # (NetworkPolicies can't directly select Services, only pods/namespaces/IPBlocks.)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: fincore
+          podSelector:
+            matchLabels:
+              fincore.io/allow-from-webapp: "true"

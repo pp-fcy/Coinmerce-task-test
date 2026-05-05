@@ -28,14 +28,14 @@ for cmd in docker kubectl kind helm; do
 done
 
 # ── kind cluster ──────────────────────────────────────────────────────────
-if kind get clusters 2>/dev/null | grep -q "coinmerce"; then
-  warn "Kind cluster 'coinmerce' already exists — skipping creation"
+if kind get clusters 2>/dev/null | grep -q "fincore"; then
+  warn "Kind cluster 'fincore' already exists — skipping creation"
 else
   log "Creating kind cluster..."
   kind create cluster --config kind-config.yaml
 fi
 
-kubectl config use-context kind-coinmerce
+kubectl config use-context kind-fincore
 
 # ── Deploy application ────────────────────────────────────────────────────
 log "Deploying application..."
@@ -45,7 +45,7 @@ kubectl apply -f k8s/webapp/service.yaml
 kubectl apply -f k8s/webapp/policy.yaml
 
 log "Waiting for rollout..."
-kubectl rollout status deployment/coinmerce-app -n coinmerce --timeout=120s
+kubectl rollout status deployment/fincore-app -n fincore --timeout=120s
 
 # ── Monitoring (optional) ─────────────────────────────────────────────────
 if [ "$WITH_MONITORING" = true ]; then
@@ -70,14 +70,14 @@ if [ "$WITH_ISTIO" = true ]; then
     export PATH="$PATH:$PWD/istio-1.21.0/bin"
   fi
   istioctl install --set profile=minimal -y
-  kubectl label namespace coinmerce istio-injection=enabled --overwrite
-  kubectl rollout restart deployment/coinmerce-app -n coinmerce
+  kubectl label namespace fincore istio-injection=enabled --overwrite
+  kubectl rollout restart deployment/fincore-app -n fincore
   kubectl apply -f istio/manifests.yaml
 fi
 
 # ── Smoke test ────────────────────────────────────────────────────────────
 log "Running smoke test..."
-kubectl port-forward svc/coinmerce-app 8080:80 -n coinmerce &
+kubectl port-forward svc/fincore-app 8080:80 -n fincore &
 PF_PID=$!
 sleep 4
 
@@ -96,7 +96,7 @@ echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━
 echo -e "${GREEN}  Setup complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "  App:       kubectl port-forward svc/coinmerce-app 8080:80 -n coinmerce → http://localhost:8080"
+echo "  App:       kubectl port-forward svc/fincore-app 8080:80 -n fincore → http://localhost:8080"
 echo "  Tests:     curl -sf http://localhost:8080/ | grep Hello"
 [ "$WITH_MONITORING" = true ] && echo "  Grafana:   kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring"
 echo ""

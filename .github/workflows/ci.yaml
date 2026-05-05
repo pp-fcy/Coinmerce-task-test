@@ -1,4 +1,17 @@
-# Runs the same hooks as locally: .pre-commit-config.yaml (via pre-commit/action).
+# Golden Path — CI/CD Pipeline
+#
+# Flow (on push to main):
+#   1. pre-commit  — lint, kubeconform, gitleaks, ruff
+#   2. build       — docker build + Trivy scan (runs on PRs too, no push)
+#   3. push        — push sha-<commit> + latest tags to Docker Hub  [main only]
+#   4. deploy      — yq-patch deployment.yaml + git commit → ArgoCD auto-syncs [main only]
+#
+# Required GitHub Secrets:
+#   DOCKERHUB_USERNAME  — your Docker Hub username
+#   DOCKERHUB_TOKEN     — Docker Hub access token (Settings → Security → Access Tokens)
+#   GH_PAT              — GitHub Personal Access Token with repo write scope
+#                         (needed so the manifest-update commit triggers ArgoCD)
+
 name: CI
 
 on:
@@ -9,10 +22,13 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-
 jobs:
+  # ── 1. Lint & Validate ──────────────────────────────────────────────────────
   pre-commit:
+    name: Lint & Validate
     runs-on: ubuntu-latest
+    # Skip when the manifest-update bot commits back to main (avoid infinite loop)
+    if: github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -20,19 +36,100 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Official action: installs hooks, caches environments, runs pre-commit
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files --show-diff-on-failure
-  scan: # image build can also be done in this CICD job
+
+  # ── 2. Build & Security Scan ────────────────────────────────────────────────
+  build:
+    name: Build & Scan
     runs-on: ubuntu-latest
     needs: pre-commit
+    outputs:
+      image_tag: sha-${{ github.sha }}
     steps:
-      - name: Run Trivy vulnerability scan
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: app/
+          push: false
+          load: true
+          tags: fincore-hello:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: crccheck/hello-world:v1.0.0
+          image-ref: fincore-hello:scan
           format: table
           exit-code: "1"
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+
+  # ── 3. Push to Docker Hub ───────────────────────────────────────────────────
+  push:
+    name: Push to Docker Hub
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: app/
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/fincore-hello:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fincore-hello:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 4. Update Manifest → ArgoCD auto-syncs ─────────────────────────────────
+  deploy:
+    name: Update Manifest & Trigger ArgoCD
+    runs-on: ubuntu-latest
+    needs: push
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use PAT so the commit is visible to ArgoCD and re-triggers webhooks
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Install yq
+        run: |
+          wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      - name: Patch image tag in deployment manifest
+        run: |
+          yq e \
+            '.spec.template.spec.containers[0].image = "${{ secrets.DOCKERHUB_USERNAME }}/fincore-hello:sha-${{ github.sha }}"' \
+            -i k8s/webapp/deployment.yaml
+
+      - name: Commit and push updated manifest
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/webapp/deployment.yaml
+          # Only commit if the manifest actually changed (idempotent)
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "ci: deploy fincore-hello sha-${{ github.sha }} [skip ci]"
+          git push
