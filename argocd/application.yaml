@@ -14,10 +14,6 @@ spec:
     - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
       path: k8s/bootstrap
       targetRevision: main
-    # StorageClass + PV for Prometheus (sync-wave: -1 — must exist before Helm chart)
-    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
-      path: k8s/storage
-      targetRevision: main
     # Installs networking.istio.io CRDs before istio/manifests.yaml
     - repoURL: https://istio-release.storage.googleapis.com/charts
       chart: base

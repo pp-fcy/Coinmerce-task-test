@@ -38,22 +38,10 @@ prometheus:
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector: {}
     retention: 24h
+    # emptyDir: no PV needed, no permission issues. Data lives for the lifetime
+    # of the pod — fine for a local kind demo cluster.
     storageSpec:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: local-storage
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 5Gi
-    # Prometheus runs as nobody (UID 65534). The hostPath PV is owned by root,
-    # so without fsGroup Kubernetes won't chown the mount and Prometheus panics
-    # with "permission denied" on /prometheus/queries.active at startup.
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 65534
-      runAsGroup: 65534
-      fsGroup: 65534
+      emptyDir: {}
     resources:
       requests:
         memory: 400Mi
