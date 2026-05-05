@@ -57,6 +57,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # QEMU lets the amd64 CI runner cross-compile for arm64 (Apple Silicon kind).
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -79,12 +85,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build image (main) — push to GHCR
+      - name: Build image (main) — push multi-platform to GHCR
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v6
         with:
           context: app/
           push: true
+          # Both platforms so the image runs on amd64 CI/prod and arm64 (Apple Silicon kind).
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/pp-fcy/fincore-hello:latest
             ghcr.io/pp-fcy/fincore-hello:sha-${{ github.sha }}

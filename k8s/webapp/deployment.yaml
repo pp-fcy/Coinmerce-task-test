@@ -32,17 +32,26 @@ spec:
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          # ScheduleAnyway = best-effort spread, not a hard block.
+          # DoNotSchedule deadlocks on kind during rolling updates: the surge pod
+          # sees Terminating pods still counted on both workers and finds no valid
+          # node, stalling the rollout indefinitely.
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app: fincore-app
 
       tolerations:
-        # Allow scheduling onto kind's control-plane when workers are constrained.
+        # kind control-plane taints
         - key: "node-role.kubernetes.io/control-plane"
           operator: "Exists"
           effect: "NoSchedule"
         - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+        # kind transiently adds this taint during cluster init / node upgrades;
+        # without it the pod stays Pending while the node finishes initialising.
+        - key: "node.kubernetes.io/not-ready"
           operator: "Exists"
           effect: "NoSchedule"
 
