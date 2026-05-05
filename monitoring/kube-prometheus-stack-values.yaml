@@ -22,18 +22,22 @@ grafana:
             path: /var/lib/grafana/dashboards/default
 
 prometheus:
+  # Move the Prometheus CR itself to wave 3 — after the Operator Deployment
+  # (wave 2). Without this ArgoCD applies the CR at wave 0, waits for it to
+  # be Healthy, but it can never be Healthy because the Operator that creates
+  # the StatefulSet hasn't deployed yet (it's at wave 2). This deadlocks all
+  # wave 1 resources (Istio DestinationRule / VirtualService / Gateway).
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
   prometheusSpec:
     podMetadata:
       annotations:
-        argocd.argoproj.io/sync-wave: "2"
+        argocd.argoproj.io/sync-wave: "3"
     # Scrape all ServiceMonitors across all namespaces
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector: {}
     retention: 24h
-    # Bind to the local-storage PV defined in k8s/storage/prometheus-storage.yaml.
-    # Uses hostPath inside the kind node container — data survives pod restarts
-    # for the lifetime of the kind cluster.
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -63,6 +67,14 @@ nodeExporter:
     argocd.argoproj.io/sync-wave: "2"
 
 prometheusOperator:
+  # Admission webhooks require cert-manager or a working cert Job. On kind
+  # neither exists, so the admission-create Job runs in PreSync but the
+  # admission-patch PostSync Job never fires (sync crashes before PostSync).
+  # Disabling both removes the PreSync/PostSync Job dependency cycle entirely.
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
   annotations:
     argocd.argoproj.io/sync-wave: "2"
   podAnnotations:

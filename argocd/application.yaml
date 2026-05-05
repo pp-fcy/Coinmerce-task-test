@@ -53,6 +53,13 @@ spec:
       - ServerSideApply=true
       # Skip dry-run validation for resources whose CRD is not yet installed.
       - SkipDryRunOnMissingResource=true
+      # Without this, ArgoCD still diffs ignored fields — the HPA
+      # .status.terminatingReplicas schema error crashes the whole sync even
+      # though it's listed in ignoreDifferences above.
+      - RespectIgnoreDifferences=true
+      # Prevents ArgoCD from validating Istio/Prometheus CRD manifests offline
+      # (where those CRDs don't exist yet), which blocks wave progression.
+      - SkipOfflineKubernetesManifestCheck=true
     retry:
       limit: 3
       backoff:
