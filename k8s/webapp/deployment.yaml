@@ -9,7 +9,7 @@ metadata:
     app: fincore-app
     version: v1
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: fincore-app
@@ -36,6 +36,15 @@ spec:
           labelSelector:
             matchLabels:
               app: fincore-app
+
+      tolerations:
+        # Allow scheduling onto kind's control-plane when workers are constrained.
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
 
       terminationGracePeriodSeconds: 30
 
