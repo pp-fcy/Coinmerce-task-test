@@ -58,7 +58,7 @@ spec:
         - name: fincore-app
           # Image is updated automatically by the CI golden path (ci.yaml job: deploy).
           # Tag is pinned to sha-<commit> on every push to main; ArgoCD then auto-syncs.
-          image: ghcr.io/pp-fcy/fincore-hello:sha-9fa29540b9edf5e604f995b57ebec6242828c2c5
+          image: ghcr.io/pp-fcy/fincore-hello:sha-1da3b3e90aeb72cf0e7f57a62a92f8c740ee8b3d
           imagePullPolicy: Always
           ports:
             - name: http
