@@ -34,7 +34,7 @@ spec:
       helm:
         valueFiles:
           - $values/monitoring/kube-prometheus-stack-values.yaml
-    - repoURL: git@github.com:pp-fcy/Fincore-task-test.git
+    - repoURL: git@github.com:pp-fcy/Coinmerce-task-test.git
       path: k8s/monitoring
       targetRevision: main
   destination:
