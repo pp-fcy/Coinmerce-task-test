@@ -1,20 +1,20 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: coinmerce-webapp-dashboard
-  namespace: coinmerce
+  name: fincore-webapp-dashboard
+  namespace: fincore
   annotations:
     argocd.argoproj.io/sync-wave: "3"
   labels:
     grafana_dashboard: "1"
 data:
-  coinmerce-webapp.json: |
+  fincore-webapp.json: |
     {
-      "title": "Coinmerce Webapp",
-      "uid": "coinmerce-webapp",
+      "title": "Fincore Webapp",
+      "uid": "fincore-webapp",
       "schemaVersion": 38,
       "version": 1,
-      "tags": ["coinmerce", "webapp"],
+      "tags": ["fincore", "webapp"],
       "refresh": "30s",
       "time": { "from": "now-1h", "to": "now" },
       "timezone": "browser",
@@ -29,8 +29,8 @@ data:
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
           "targets": [
-            { "expr": "kube_deployment_spec_replicas{namespace=\"coinmerce\", deployment=\"coinmerce-app\"}", "legendFormat": "desired" },
-            { "expr": "kube_deployment_status_replicas_available{namespace=\"coinmerce\", deployment=\"coinmerce-app\"}", "legendFormat": "ready" }
+            { "expr": "kube_deployment_spec_replicas{namespace=\"fincore\", deployment=\"fincore-app\"}", "legendFormat": "desired" },
+            { "expr": "kube_deployment_status_replicas_available{namespace=\"fincore\", deployment=\"fincore-app\"}", "legendFormat": "ready" }
           ]
         },
         {
@@ -40,7 +40,7 @@ data:
           "gridPos": { "x": 12, "y": 0, "w": 12, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
-          "targets": [{ "expr": "sum(kube_pod_status_phase{namespace=\"coinmerce\", pod=~\"coinmerce-app.*\", phase=\"Running\"})", "legendFormat": "pods" }]
+          "targets": [{ "expr": "sum(kube_pod_status_phase{namespace=\"fincore\", pod=~\"fincore-app.*\", phase=\"Running\"})", "legendFormat": "pods" }]
         },
         {
           "id": 3,
@@ -52,7 +52,7 @@ data:
           "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1 } } },
           "targets": [
             {
-              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"coinmerce\", container=\"coinmerce-app\", pod=~\"coinmerce-app.*\"}[5m])) by (pod)",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"fincore\", container=\"fincore-app\", pod=~\"fincore-app.*\"}[5m])) by (pod)",
               "legendFormat": "{{ pod }}"
             }
           ]
@@ -67,7 +67,7 @@ data:
           "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 1 } } },
           "targets": [
             {
-              "expr": "sum(container_memory_working_set_bytes{namespace=\"coinmerce\", container=\"coinmerce-app\", pod=~\"coinmerce-app.*\"}) by (pod)",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"fincore\", container=\"fincore-app\", pod=~\"fincore-app.*\"}) by (pod)",
               "legendFormat": "{{ pod }}"
             }
           ]

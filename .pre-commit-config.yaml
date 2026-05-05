@@ -23,15 +23,6 @@ repos:
     hooks:
       - id: gitleaks-docker
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
-    hooks:
-      - id: ruff
-        args: [--fix]
-        files: ^app/.*\.py$
-      - id: ruff-format
-        files: ^app/.*\.py$
-
   - repo: local
     hooks:
       - id: kubeconform

@@ -137,7 +137,7 @@ Adds: retry logic (3 attempts on 5xx), 10s timeout, circuit breaker (ejects pod 
 
 Add the repo in `ArgoCD` GUI.
 
-Then install the control plane and apply the `test-coinmerce` Application:
+Then install the control plane and apply the `test-fincore` Application:
 
 ```bash
 ./scripts/install-argocd.sh   # also runs: kubectl apply -f argocd/application.yaml
