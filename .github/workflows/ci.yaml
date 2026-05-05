@@ -2,8 +2,9 @@
 #
 # Flow (on push to main):
 #   1. pre-commit  — lint, kubeconform, gitleaks, ruff
-#   2. build       — build once, Trivy scan, and (main only) push to GHCR
-#   3. deploy      — yq-patch deployment.yaml + git commit → ArgoCD auto-syncs [main only]
+#   2. build       — multi-platform build → push to GHCR → Trivy scan
+#   3. test        — pull image from GHCR → smoke tests
+#   4. deploy      — yq-patch deployment.yaml + git commit → ArgoCD auto-syncs
 #
 # Required GitHub Secrets:
 #   GH_PAT  — (optional) GitHub Personal Access Token with repo write scope.
@@ -14,10 +15,6 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - "app/**"
-      - ".github/workflows/ci.yaml"
-  pull_request:
     paths:
       - "app/**"
       - ".github/workflows/ci.yaml"
@@ -66,32 +63,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR (main only)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image (PRs) — load locally
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v6
-        with:
-          context: app/
-          push: false
-          tags: fincore-hello:scan
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build image (main) — push multi-platform to GHCR
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      - name: Build image — push multi-platform to GHCR
         uses: docker/build-push-action@v6
         with:
           context: app/
           push: true
-          # Both platforms so the image runs on amd64 CI/prod and arm64 (Apple Silicon kind).
           platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/pp-fcy/fincore-hello:latest
@@ -99,18 +82,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trivy vulnerability scan (PRs)
-        if: github.event_name == 'pull_request'
-        uses: aquasecurity/trivy-action@v0.35.0
-        with:
-          image-ref: fincore-hello:scan
-          format: table
-          exit-code: "1"
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-
-      - name: Trivy vulnerability scan (main)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ghcr.io/pp-fcy/fincore-hello:sha-${{ github.sha }}
@@ -171,7 +143,6 @@ jobs:
     name: Update Manifest & Trigger ArgoCD
     runs-on: ubuntu-latest
     needs: [build, test]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
         with:
